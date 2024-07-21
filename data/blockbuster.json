@@ -17,6 +17,12 @@
             "nombre": "mamona",
             "nroCopias": "2",
             "valorPrestamo": "5000"
+        },
+        "generos": {
+            "1232": {
+                "id": "1232",
+                "nombre_G": "terror"
+            }
         }
     }
 }

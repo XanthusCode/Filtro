@@ -1,9 +1,9 @@
 import os
-import json
 import funciones.corefile as cf
+import json
+pelicula ={}
 
 cf.RUTA = 'data/blockbuster.json'
-
 def add_movie():
     id_p = input('Ingrese la ID de la película: ')
     nombre = input('Ingrese el nombre de la película: ')
@@ -39,27 +39,13 @@ def add_movie():
         bd = {'blockbuster': {'peliculas': {}, 'actores': {}, 'formato': {}}}
 
     # Agregar la nueva película
-    bd['blockbuster']['peliculas'] = {
-        'id_p': id_p,
+    bd['blockbuster']['peliculas'][id_p] = {
         'nombre': nombre,
         'duracion': duracion,
         'sipnosis': sipnosis,
-        'generos': {genre_id: genre}
-    }
-
-    # Agregar el nuevo actor
-    bd['blockbuster']['actores'] = {
-        'id_p': id_a,
-        'nombre': actor_nombre,
-        'rol': rol
-    }
-
-    # Agregar el nuevo formato
-    bd['blockbuster']['formato'] = {
-        'id_p': id_f,
-        'nombre': formato_nombre,
-        'nroCopias': nroCopias,
-        'valorPrestamo': prestamo
+        'generos': {genre_id: genre},
+        'actores': {id_a: {'nombre': actor_nombre, 'rol': rol}},
+        'formatos': {id_f: {'nombre': formato_nombre, 'nroCopias': nroCopias, 'valorPrestamo': prestamo}}
     }
 
     # Guardar los datos actualizados en el archivo
@@ -67,53 +53,100 @@ def add_movie():
         json.dump(bd, rut, indent=4)
 
     print('Película añadida correctamente.')
+    input('Presione Enter para continuar...')
 
 def search():
     data = cf.open_file()
     name = input('Ingrese el nombre de la película a buscar: ')
     peliculas = data.get('blockbuster', {}).get('peliculas', {})
+    
     for pelicula in peliculas.values():
         if pelicula.get('nombre') == name:
-            print(pelicula)
+            print(json.dumps(pelicula, indent=4))
             return
     print('No se encontró esa película.')
+
+    input('Presione Enter para continuar...')
 
 def delete():
     data = cf.open_file()
-    name = input('Ingrese el nombre de la película a eliminar: ')
+    id_p = input('Ingrese la ID de la película a eliminar: ')
     peliculas = data.get('blockbuster', {}).get('peliculas', {})
-    for id_p, pelicula in list(peliculas.items()):
-        if pelicula.get('nombre') == name:
-            del peliculas[id_p]
-            cf.save_file(data)
-            print('Película eliminada correctamente.')
-            return
-    print('No se encontró esa película.')
+    
+    if id_p in peliculas:
+        del peliculas[id_p]
+        cf.save_file(data)
+        print('Película eliminada correctamente.')
+    else:
+        print('No se encontró esa película.')
+
+    input('Presione Enter para continuar...')
+
 
 def modify():
     data = cf.open_file()
-    name = input('Ingrese el nombre de la película a modificar: ')
+    id_p = input('Ingrese la ID de la película a modificar: ')
     peliculas = data.get('blockbuster', {}).get('peliculas', {})
-    found_movie = None
+    found_movie = peliculas.get(id_p)
 
-    for pelicula in peliculas.values():
-        if pelicula.get('nombre') == name:
-            found_movie = pelicula
-            break
-
-    if found_movie is None:
+    if not found_movie:
         print('No existe esa película.')
         return
 
     print('Película encontrada. Puede editar los siguientes campos:')
     for key, value in found_movie.items():
-        user_input = input(f'Desea editar el campo {key}? (Ingrese "si" para editar, "no" para omitir): ')
-        if user_input.lower() == 'si':
-            new_value = input(f'Ingrese el nuevo valor para {key.capitalize()}: ')
-            found_movie[key] = new_value
+        if isinstance(value, dict):
+            print(f'{key}:')
+            for sub_key, sub_value in value.items():
+                user_input = input(f'Desea editar el campo {sub_key}? (Ingrese "si" para editar, "no" para omitir): ')
+                if user_input.lower() == 'si':
+                    new_value = input(f'Ingrese el nuevo valor para {sub_key.capitalize()}: ')
+                    found_movie[key][sub_key] = new_value
+        else:
+            user_input = input(f'Desea editar el campo {key}? (Ingrese "si" para editar, "no" para omitir): ')
+            if user_input.lower() == 'si':
+                new_value = input(f'Ingrese el nuevo valor para {key.capitalize()}: ')
+                found_movie[key] = new_value
 
     # Guardar los datos actualizados en el archivo
     cf.save_file(data)
     print('Película actualizada correctamente.')
+    input('Presione Enter para continuar...')
 
 
+def list_all_movies():
+    data = cf.open_file()
+    peliculas = data.get('blockbuster', {}).get('peliculas', {})
+    
+    if not peliculas:
+        print('No hay películas registradas.')
+    else:
+        print('Listado de películas:')
+        for id_p, pelicula in peliculas.items():
+            print(f"ID: {id_p}")
+            for key, value in pelicula.items():
+                if isinstance(value, dict):
+                    print(f'{key}:')
+                    for sub_key, sub_value in value.items():
+                        print(f'  {sub_key}: {sub_value}')
+                else:
+                    print(f'{key}: {value}')
+            print('-' * 30)
+
+    input('Presione Enter para continuar...')
+
+
+def buscar_pelicula_y_mostrar():
+    data = cf.open_file()
+    nombre = input('Ingrese el nombre de la película a buscar: ')
+    peliculas = data.get('blockbuster', {}).get('peliculas', {})
+    
+    for pelicula in peliculas.values():
+        if pelicula.get('nombre') == nombre:
+            print(f"Sinopsis: {pelicula.get('sipnosis')}")
+            print("Actores:")
+            actores = pelicula.get('actores', {})
+            for actor in actores.values():
+                print(f"Nombre: {actor.get('nombre')}, Rol: {actor.get('rol')}")
+            return
+    print('No se encontró esa película.')
